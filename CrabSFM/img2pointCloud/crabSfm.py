@@ -721,7 +721,7 @@ class BlockImage:
 # -------------------------------------------------------------- #
 
 
-def CrabSFM(src: str, exportCloud: str, fast=False):
+def CrabSFM(src: str, exportCloud: str, fast=True):
     """
     This function read all images in folder src and run the sfm pipeline to create a point cloud (model) end export
     it an *.ply file in the exportCloud path.
@@ -736,8 +736,10 @@ def CrabSFM(src: str, exportCloud: str, fast=False):
     block.set_camera()
     block.find_features()
     block.feature_info()
-    #block.match_images_fast()
-    block.match_images()
+    if fast is True:
+        block.match_images_fast()
+    else:
+        block.match_images()
     block.find_landmarks()
     block.finalize_landmark()
     points, colors = block.transform_landmark_to_list()
