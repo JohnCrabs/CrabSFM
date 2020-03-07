@@ -11,7 +11,10 @@ import datetime as dt
 
 # -------------------------------------------------------------------------------------------------------------------- #
 
-def video2img(path: str, exportPath: str, fps=0, scaleFps=1.0, nameIndex=0, imgFormat="jpg"):
+videoFileFormats = (".MOV", ".mp4")
+
+
+def video2img(path: str, exportPath: str, fps=0, scaleFps=1.0, nameIndex=0, imgFormat="jpg", diffFolder=False):
     # Create a VideoCapture object and read from input file
     # If the input is the camera, pass -2 instead of the video file name
     print(str(dt.datetime.now()) + " : Video Open.... ")
@@ -23,7 +26,7 @@ def video2img(path: str, exportPath: str, fps=0, scaleFps=1.0, nameIndex=0, imgF
     print(str(dt.datetime.now()) + " : Success!\n")
 
     # Calculate fps
-    if fps == 0:
+    if fps <= 0:
         print(str(dt.datetime.now()) + " : Calculate fps... ")
         (major_ver, minor_ver, subminor_ver) = cv.__version__.split('.')
         if int(major_ver) < 3:
@@ -38,9 +41,16 @@ def video2img(path: str, exportPath: str, fps=0, scaleFps=1.0, nameIndex=0, imgF
     currFrameCounter = 0
     print(str(dt.datetime.now()) + " : fps = {0}\n".format(fps))
     print(str(dt.datetime.now()) + " : Export Frames")
+    export_path = exportPath
+    if diffFolder:
+        videoName = os.path.basename(path)
+        videoName = os.path.splitext(videoName)[0]
+        export_path = export_path + videoName + "/"
+        if not os.path.exists(export_path):
+            os.makedirs(export_path)
     while success:
         if currFrameCounter % fps == 0:
-            exportFilePath = exportPath + "%03d." % nameIndex + imgFormat
+            exportFilePath = export_path + "%03d." % nameIndex + imgFormat
             cv.imwrite(exportFilePath, frame)  # save frame as JPEG file
             print(str(dt.datetime.now()) + " : Export frame: %03d as " % nameIndex, exportFilePath)
             nameIndex += 1
@@ -56,15 +66,16 @@ def video2img(path: str, exportPath: str, fps=0, scaleFps=1.0, nameIndex=0, imgF
 
 # -------------------------------------------------------------------------------------------------------------------- #
 
-def videoINfolder2image(folderPath: str, exportPath: str, fps=0, scaleFps=1.0, imgFormat="jpg"):
+def videoINfolder2image(folderPath: str, exportPath: str, fps=0, scaleFps=1.0, imgFormat="jpg", diffFolder=False):
     videoFiles = []
     fileCounter = 0
     print(str(dt.datetime.now()) + " : Reading files in folder")
     for r, d, f in os.walk(folderPath):
         for file in f:
-            if '.MOV' in file:
-                videoFiles.append(os.path.join(r, file))
-                fileCounter += 1
+            for v_format in videoFileFormats:
+                if v_format in file:
+                    videoFiles.append(os.path.join(r, file))
+                    fileCounter += 1
     videoFiles.sort()
 
     # print(videoFiles)  # for Debugging
@@ -73,4 +84,4 @@ def videoINfolder2image(folderPath: str, exportPath: str, fps=0, scaleFps=1.0, i
     frameIndex = 0
     for f in videoFiles:
         print("\n" + str(dt.datetime.now()) + " : Opening file %s" % f)
-        success, frameIndex = video2img(f, exportPath, fps, scaleFps, frameIndex, imgFormat)
+        success, frameIndex = video2img(f, exportPath, fps, scaleFps, frameIndex, imgFormat, diffFolder)

@@ -1,6 +1,8 @@
 from img2pointCloud.calibrationCMR import *
 import math as mth
 
+imgFileFormats = (".jpg", ".jpeg", ".png", ".tiff")
+
 H_MIN_SIZE = 2048
 W_MIN_SIZE = 2048
 
@@ -295,10 +297,26 @@ class Landmark:
         self.match_id_list.append(img_index)
 
 
+class PairModel:
+    id = 0
+    imgL_id = 0
+    imgR_id = 0
+    points = []
+    colors = []
+
+    def set_model(self, index: int, imgL_id: int, imgR_id: int, points: [], colors: []):
+        self.id = index
+        self.imgL_id = imgL_id
+        self.imgR_id = imgR_id
+        self.points = points
+        self.colors = colors
+
+
 class BlockImage:
     images = []
     matches = []
     landmark = []
+    pair_model = []
     camera = Camera()
     fast = True
 
@@ -507,7 +525,7 @@ class BlockImage:
         self.camera = cam
         self.camera.camera_info()
 
-    def find_landmarks(self):
+    def find_landmarks(self, exportPath):
         print("")
         print_message("Find Landmarks")
 
@@ -520,7 +538,7 @@ class BlockImage:
         matchCounter = 1
         set_start_mtrx = True
         landmarkCounter = 0
-        #landmark_kp_indexes = []
+        pairModelCounter = 0
         for match in self.matches:  # for each matching pair
 
             imgL_index = match.img_L_id  # read left img id
@@ -586,8 +604,6 @@ class BlockImage:
             landmark_debugging_list = []
             if poseVal > POSE_RATIO * g_p_size and match.is_good:
                 # Create the pose matrices.
-                #print(imgL.T_mtrx[0].T_mtrx)
-
                 # Create the Pose and Projection Matrices
                 print_message("Calculate Pose Matrices:")
 
@@ -629,11 +645,6 @@ class BlockImage:
                                                 projPoints2=triang_pnts_R)
                 #print(points4D)  # Uncomment for debugging
 
-                '''
-                    Here we need to write code to check if the p4D and landmark points are the same in both images
-                    and re-project the next landmark to previous
-                '''
-
                 # Find Good LandMark Points and Set Them to List
                 #print(pts_inlier_L_id)
                 #print(pts_inlier_R_id)
@@ -648,12 +659,6 @@ class BlockImage:
                         pt3d.y = points4D[1][l_index] / points4D[3][l_index]
                         pt3d.z = points4D[2][l_index] / points4D[3][l_index]
 
-                        #pnt_img_L = pts_inlier_L_ids[l_index]
-                        #pnt_img_R = pts_inlier_R_ids[l_index]
-
-                        m_index, m_id = self.check_if_landmark_is_the_same(pts_inlier_L_id[l_index],
-                                                                           pts_inlier_R_id[l_index])
-
                         # OpenCV images are in BGR system so b=0, g=1, r=2
                         r = colors[l_index][0]
                         g = colors[l_index][1]
@@ -664,30 +669,24 @@ class BlockImage:
                         l_pnt.set_match_id_list(pts_inlier_L_id[l_index], pts_inlier_R_id[l_index])
 
                         landmark_debugging_list.append(l_pnt)
-
-                        #print(pts_inlier_L_id[l_index], pts_inlier_R_id[l_index])
-                        if m_index and matchCounter > 1:
-                            #print(m_id)
-                            print("match")
-                            self.landmark[m_id].append_pnt3d(pt3d)
-                        else:
-                            self.landmark.append(l_pnt)
-                            landmarkCounter += 1
-                exportName = "outputData/PointCloud/" + imgL_name + "_" + imgR_name + ".ply"
+                        landmarkCounter += 1
+                pair_model_tmp = PairModel()
+                exportName = exportPath + imgL_name + "_" + imgR_name + ".ply"
                 exp_points, exp_colors = transform_landmark_to_list_items(landmark_debugging_list)
+                message = "Export Pair Model as : " + exportName
+                print_message(message)
                 create_output(exp_points, exp_colors, exportName)
+
+                pair_model_tmp.set_model(pairModelCounter, imgL_index, imgR_index, exp_points, exp_colors)
+                self.pair_model.append(pair_model_tmp)
             else:
+                message = "Cannot create pair model from images " + imgL_name + " and " + imgR_name + \
+                          ", due to few points."
+                print_message(message)
+
                 imgR.set_starting_pose_matrix(imgL.T_mtrx)
                 imgR.set_starting_projection_matrix(imgL.P_mtrx)
             matchCounter += 1  # increase the matchCounter
-
-    def check_if_landmark_is_the_same(self, index_L, index_R):
-        for landmark in self.landmark:
-            for index in landmark.match_id_list:
-                if index is index_L:
-                    landmark.append_to_id_list(index_R)
-                    return True, landmark.l_id
-        return False, -1
 
     def finalize_landmark(self):
         for landmark in self.landmark:
@@ -740,18 +739,10 @@ def CrabSFM(src: str, exportCloud: str, fast=True):
         block.match_images_fast()
     else:
         block.match_images()
-    block.find_landmarks()
-    block.finalize_landmark()
-    points, colors = block.transform_landmark_to_list()
-    #print("")
-    #print(len(points))
+    block.find_landmarks(exportCloud)
 
     print("")
-    export_file = exportCloud + "cloud.ply"
-    message = "Exporting %d points as " % len(points) + export_file
-    print_message(message)
-
-    create_output(points, colors, export_file)
+    print(len(block.pair_model))
 
     return True
 
