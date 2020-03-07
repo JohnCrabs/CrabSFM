@@ -1,4 +1,8 @@
-from img2pointCloud.calibrationCMR import *
+import os  # Use it for reading the paths
+import cv2 as cv  # Key library for the calibration algorithm
+import numpy as np  # Use it to save the parameters
+import datetime as dt  # Use it for printing messages
+
 import math as mth
 
 imgFileFormats = (".jpg", ".jpeg", ".png", ".tiff")
@@ -675,7 +679,7 @@ class BlockImage:
                 exp_points, exp_colors = transform_landmark_to_list_items(landmark_debugging_list)
                 message = "Export Pair Model as : " + exportName
                 print_message(message)
-                create_output(exp_points, exp_colors, exportName)
+                export_as_ply(exp_points, exp_colors, exportName)
 
                 pair_model_tmp.set_model(pairModelCounter, imgL_index, imgR_index, exp_points, exp_colors)
                 self.pair_model.append(pair_model_tmp)
@@ -741,8 +745,8 @@ def CrabSFM(src: str, exportCloud: str, fast=True):
         block.match_images()
     block.find_landmarks(exportCloud)
 
-    print("")
-    print(len(block.pair_model))
+    #print("")
+    #print(len(block.pair_model))
 
     return True
 
@@ -883,7 +887,7 @@ def open_Images_in_Folder(src: str):
     return block
 
 
-def create_output(vertices, colors, filename):
+def export_as_ply(vertices, colors, filename):
     colors = colors.reshape(-1, 3)
     vertices = np.hstack([vertices.reshape(-1, 3), colors])
 
