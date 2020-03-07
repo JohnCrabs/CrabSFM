@@ -15,4 +15,14 @@ submodels (pairs of point cloud) to a complete model created from all images.
 This library now can export frames drom mp4 video files. If you want to export some other video type frames, you just have to 
 add the specific type to the video-type list and run the function as shown in main.py
 
-Also by choosing diffFolder=True the algorith can now save the frames of each video in different folder. However it keeps the counter numbering in all folder. In the future I may add the option to restart the counter for the different folders.
+Also by choosing diffFolder=True the algorith can now save the frames of each video in different folder. You can also set if 
+you want to keep the numbering or start over from 000 when changing folder by adding **restartNumbering=True/False**.
+
+Example:
+    
+    videoINfolder2image(in_folder, out_folder, scaleFps=1, imgFormat="jpg", diffFolder=True, restartNumbering=True)
+    
+## visualizeCloud()
+A simple cloud visualizer using **open3d** library. Currently you must give the path to the \*.ply file. In the future I'll 
+add a simple command line so you can load multiple \*.ply files and visualize each of them by typing an index id at the 
+command line. 
