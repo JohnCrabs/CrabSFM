@@ -152,21 +152,20 @@ class Image:
     This class contains all the variables which describes an Image. Also it contains the needed functions for
     setting values to these variables.
     """
-    id: int
-    src: str
-    name: str
-    type_f: str
-    width: int
-    height: int
-    bands: int
+    id: int  # Primary key (same as the index in the table)
+    src: str  # Image relative or absolute path
+    name: str  # Image name (without type)
+    type_f: str  # Image type (for example .jpg)
+    width: int  # Image width (in this algorithm the width of the downsample)
+    height: int  # Image height (in this algorithm the height of the downsample)
+    bands: int  # Image color bands
 
-    keypoints = []
-    descriptors = []
+    keypoints = []  # The list of feature key points
+    descriptors = []  # The list of descriptors for each key point
+    kp_ids = []
 
-    match_list_id = []
-
-    T_mtrx = PoseMatrix()  # Pose matrix
-    P_mtrx = ProjectionMatrix()  # Projection matrix
+    T_mtrx = PoseMatrix()  # Pose matrix for the current image
+    P_mtrx = ProjectionMatrix()  # Projection matrix  for the current image
 
     def set_image(self, index: int, src: str, name: str, type_f: str, width: int, height: int, bands: int):
         self.id = index
@@ -180,31 +179,10 @@ class Image:
     def set_feature_points(self, kp, desc):
         self.keypoints = kp
         self.descriptors = desc
-
-    def set_match_table(self):
-        match_tmp = []
-        for index in range(0, len(self.keypoints)):
-            list_tmp = []
-            list_tmp.append(index)
-            match_tmp.append(list_tmp)
-        self.match_list_id = match_tmp
-        # print(len(self.match_list_id))
-
-    def append_match_ids(self, img_index, index_to_append):
-        #print(self.name, self.match_list_id)
-        #print(len(self.match_list_id))
-        for m_index in range(0, len(self.match_list_id)):
-            there_is_match = False
-            i_index = 0
-            for i_index in range(0, len(img_index)):
-                if m_index is img_index[i_index]:
-                    there_is_match = True
-                    break
-            if there_is_match:
-                self.match_list_id[m_index].append(index_to_append[i_index])
-            else:
-                self.match_list_id[m_index].append(-1)
-        #print(self.match_list_id)
+        kp_id_tmp = []
+        for i in range(0, len(kp)):
+            kp_id_tmp.append(i)
+        self.kp_ids = kp_id_tmp
 
     def image_info(self):
         print("")
@@ -218,13 +196,6 @@ class Image:
     def keypoint_info(self):
         message = " Img_%s_keypoints = " % self.name + "%d" % len(self.keypoints)
         print_message(message)
-
-    def check_if_there_is_kp_match(self, kp_id_L, img_id_R, kp_id_R):
-        m_id = img_id_R - self.id
-        #print(self.match_list_id[kp_id_L][m_id])
-        if self.match_list_id[kp_id_L][m_id] == kp_id_R:
-            return True
-        return False
 
     def set_starting_pose_matrix(self, pose_mtrx: PoseMatrix):
         self.T_mtrx = pose_mtrx
@@ -260,6 +231,29 @@ class MatchImages:
         self.f_pts_indexes_R = g_matches_id_R
         self.colors = colors
         self.is_good = is_good
+
+    def create_index_table(self):
+        index_tab = []
+        for id_index in range(0, len(self.f_pts_indexes_L)):
+            index_tab_tmp = []
+            id_L = self.f_pts_indexes_L[id_index]
+            id_R = self.f_pts_indexes_R[id_index]
+            index_tab_tmp.append(id_L)
+            index_tab_tmp.append(id_R)
+            index_tab.append(index_tab_tmp)
+        index_tab = np.array(index_tab)
+        return index_tab
+
+    def export_id_csv(self, path: str):
+        id_list = []
+        for i in range(0, len(self.f_pts_indexes_L)):
+            tmp = []
+
+            tmp.append(int(self.f_pts_indexes_L[i]))
+            tmp.append(int(self.f_pts_indexes_R[i]))
+            id_list.append(tmp)
+        #print(id_list)
+        np.savetxt(path, id_list, delimiter=",", fmt='%d')
 
 
 class Landmark:
@@ -297,9 +291,6 @@ class Landmark:
         id_list.append(img_index_R)
         self.match_id_list = id_list
 
-    def append_to_id_list(self, img_index):
-        self.match_id_list.append(img_index)
-
 
 class PairModel:
     id = 0
@@ -307,11 +298,11 @@ class PairModel:
     imgR_id = 0
     points = []
     colors = []
+    id_L_R_list = []
 
-    def set_model(self, index: int, imgL_id: int, imgR_id: int, points: [], colors: []):
+    def set_model(self, index: int, id_list: [], points: [], colors: []):
         self.id = index
-        self.imgL_id = imgL_id
-        self.imgR_id = imgR_id
+        self.id_L_R_list = id_list
         self.points = points
         self.colors = colors
 
@@ -321,11 +312,10 @@ class BlockImage:
     matches = []
     landmark = []
     pair_model = []
+    l_block_model = []
     camera = Camera()
-    fast = True
 
-    def set_speed(self, speed=True):
-        self.fast = speed
+    block_match_list = []
 
     def append_image(self, img: Image):
         self.images.append(img)
@@ -386,14 +376,13 @@ class BlockImage:
 
         print_message("Needs to perform %d matches." % matchSize)
 
-        if self.fast is not True:
-            self.create_match_tables()
-
         # Create matches
         matchCounter = 1
         for imgL_index in range(0, block_size-1):
             self.match_pairs(matcher, imgL_index, imgL_index+1, matchCounter, matchSize)
             matchCounter += 1  # increase the matchCounter
+
+        self.create_block_match_list()
 
     def match_images(self):
         print("")
@@ -410,15 +399,22 @@ class BlockImage:
 
         print_message("Needs to perform %d matches." % matchSize)
 
-        if self.fast is not True:
-            self.create_match_tables()
-
         # Create matches
         matchCounter = 1
         for imgL_index in range(0, block_size-1):
             for imgR_index in range(imgL_index+1, block_size):
                 self.match_pairs(matcher, imgL_index, imgR_index, matchCounter, matchSize)
                 matchCounter += 1  # increase the matchCounter
+
+        for m in self.matches:
+            imgL_name = self.images[m.img_L_id].name
+            imgR_name = self.images[m.img_R_id].name
+            exportName = "./outputData/csv/" + imgL_name + "_" + imgR_name + ".csv"
+            if not os.path.exists("./outputData/csv/"):
+                os.makedirs("./outputData/csv/")
+            m.export_id_csv(exportName)
+
+        self.create_block_match_list()
 
     def match_pairs(self, matcher, imgL_index: int, imgR_index: int, matchCounter: int, matchSize: int):
         img_L = self.images[imgL_index]
@@ -438,6 +434,9 @@ class BlockImage:
         desc_L = self.images[imgL_index].descriptors
         desc_R = self.images[imgR_index].descriptors
 
+        kp_id_list_L = self.images[imgL_index].kp_ids
+        kp_id_list_R = self.images[imgR_index].kp_ids
+
         matched_points = matcher.knnMatch(desc_L, desc_R, k=2)  # Run matcher
 
         # Find all good points as per Lower's ratio.
@@ -454,8 +453,8 @@ class BlockImage:
                 points_L_img.append(kp_L[m.queryIdx].pt)  # Take p_coords for left img
                 points_R_img.append(kp_R[m.trainIdx].pt)  # Take p_coords for right img
 
-                points_L_img_ids.append(m.queryIdx)  # Take the ids for the left image
-                points_R_img_ids.append(m.trainIdx)  # Take the ids for the right image
+                points_L_img_ids.append(kp_id_list_L[m.queryIdx])  # Take the ids for the left image
+                points_R_img_ids.append(kp_id_list_R[m.trainIdx])  # Take the ids for the right image
 
         g_pnts_size = len(good_matches)
         message = "Found %d" % g_pnts_size + " good matches out of %d" % match_pnt_size + " matching points."
@@ -464,12 +463,11 @@ class BlockImage:
         good_matches = np.array(good_matches)
         points_L_img = np.array(points_L_img)
         points_R_img = np.array(points_R_img)
-        points_L_img_ids = np.array(points_L_img_ids)
-        points_R_img_ids = np.array(points_R_img_ids)
+        points_L_img_ids = np.array(points_L_img_ids)  # ID_L
+        points_R_img_ids = np.array(points_R_img_ids)  # ID_R
 
-        # This PROCESS OVERWORK THE APPLICATION
-        if self.fast is not True:
-            img_L.append_match_ids(points_L_img_ids, points_R_img_ids)  # Create a list with all good matches
+        #print(points_L_img_ids)
+        #print(points_R_img_ids)
 
         # Calculate inliers using Fundamental Matrix
         print_message("Calculate inlier matches.")
@@ -481,9 +479,9 @@ class BlockImage:
         pts_inlier_matches = good_matches[mask.ravel() == 1]
         pts_inlier_L = points_L_img[mask.ravel() == 1]  # Select inliers from imgL using fundamental mask
         pts_inlier_R = points_R_img[mask.ravel() == 1]  # Select inliers from imgR using fundamental mask
-        pts_inlier_L_ids = points_L_img_ids[mask.ravel() == 1]  # Select inliers from imgL_index
+        pts_inlier_L_ids = points_L_img_ids[mask.ravel() == 1]  # Select inlier IDS from imgL_index
         # using fundamental mask
-        pts_inlier_R_ids = points_R_img_ids[mask.ravel() == 1]  # Select inliers from imgR_index
+        pts_inlier_R_ids = points_R_img_ids[mask.ravel() == 1]  # Select inliers IDS from imgR_index
         # using fundamental mask
 
         # Calculate the Color of an Image
@@ -515,10 +513,6 @@ class BlockImage:
         print_message(message)
 
         self.matches.append(match_tmp)
-
-    def create_match_tables(self):
-        for img in self.images:
-            img.set_match_table()
 
     def set_camera(self):
         print("")
@@ -676,12 +670,12 @@ class BlockImage:
                         landmarkCounter += 1
                 pair_model_tmp = PairModel()
                 exportName = exportPath + imgL_name + "_" + imgR_name + ".ply"
-                exp_points, exp_colors = transform_landmark_to_list_items(landmark_debugging_list)
+                exp_points, exp_colors, exp_id = transform_landmark_to_list_items(landmark_debugging_list)
                 message = "Export Pair Model as : " + exportName
                 print_message(message)
                 export_as_ply(exp_points, exp_colors, exportName)
 
-                pair_model_tmp.set_model(pairModelCounter, imgL_index, imgR_index, exp_points, exp_colors)
+                pair_model_tmp.set_model(pairModelCounter, exp_id, exp_points, exp_colors)
                 self.pair_model.append(pair_model_tmp)
             else:
                 message = "Cannot create pair model from images " + imgL_name + " and " + imgR_name + \
@@ -699,6 +693,7 @@ class BlockImage:
     def transform_landmark_to_list(self):
         points = []
         colors = []
+        id_list = []
         for l_pnt in self.landmark:
             x = l_pnt.pnt3d.x
             y = l_pnt.pnt3d.y
@@ -712,12 +707,43 @@ class BlockImage:
             #print(col)
             points.append(pt_tmp)
             colors.append(col)
+            id_list.append(l_pnt.match_id_list)
             #print(pt_tmp)
 
         points = np.array(points)
         colors = np.array(colors)
 
-        return points, colors
+        return points, colors, id_list
+
+    def create_block_match_list(self):
+        block_match_list_tmp = []
+
+        for img_id in range(0, len(self.images)-1):
+            img = self.images[img_id]
+            kp_ids = img.keypoints
+
+            match_list_tmp = []
+            for i in range(0, len(kp_ids)):
+                tmp = [i]
+                for j in range(img.id+1, len(self.images)):
+                    tmp.append(-1)
+
+                match_list_tmp.append(tmp)
+            #print(match_list_tmp)
+            block_match_list_tmp.append(match_list_tmp)
+
+        for m in self.matches:
+            imgL_id = m.img_L_id
+            imgR_id = m.img_R_id
+            #print(imgL_id, imgR_id)
+            #print(block_match_list_tmp[imgL_id])
+            match_ids_L = m.f_pts_indexes_L
+            match_ids_R = m.f_pts_indexes_R
+            for index in range(0, len(match_ids_L)):
+                block_match_list_tmp[imgL_id][match_ids_L[index]][imgR_id-imgL_id] = match_ids_R[index]
+            #print(block_match_list_tmp[imgL_id])
+        self.block_match_list = block_match_list_tmp
+        print(self.block_match_list)
 
 # -------------------------------------------------------------- #
 #
@@ -734,7 +760,6 @@ def CrabSFM(src: str, exportCloud: str, fast=True):
     :return: True when the process finished
     """
     block = open_Images_in_Folder(src=src)
-    block.set_speed(fast)
     block.info_for_images()
     block.set_camera()
     block.find_features()
@@ -744,10 +769,8 @@ def CrabSFM(src: str, exportCloud: str, fast=True):
     else:
         block.match_images()
     block.find_landmarks(exportCloud)
-
     #print("")
     #print(len(block.pair_model))
-
     return True
 
 # -------------------------------------------------------------- #
@@ -953,6 +976,7 @@ def find_color_list(img: Image, pts_inlier: []):
 def transform_landmark_to_list_items(landmark: []):
     points = []
     colors = []
+    id_list = []
     for l_pnt in landmark:
         x = l_pnt.pnt3d.x
         y = l_pnt.pnt3d.y
@@ -966,9 +990,11 @@ def transform_landmark_to_list_items(landmark: []):
         #print(col)
         points.append(pt_tmp)
         colors.append(col)
+        id_list.append(l_pnt.match_id_list)
         #print(pt_tmp)
 
     points = np.array(points)
     colors = np.array(colors)
+    id_list = np.array(id_list)
 
-    return points, colors
+    return points, colors, id_list
