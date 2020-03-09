@@ -20,6 +20,11 @@ cloud will be full of junk points.)
 I will also create an efficient way to use the algorithm with multible dataset (opening a folder with subfolders and create a 
 point cloud from every object in each folder - the output will be inside the folder).
 
+## Dependences to run the algorithm:
+1) OpenCV (https://opencv.org/)
+2) Numpy  (**pip install numpy** or **pip3 install numpy**)
+3) Open3d (for visualizeCloud.py, **pip install open3d-python** or **pip3 install open3d-python**)
+
 ### Some useful information about the algorith.
 The sfm pipeline I used is the follow:
 1) Open all images in folder (for saving memory, read only the path and open the images when needed)
