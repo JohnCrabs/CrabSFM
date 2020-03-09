@@ -26,10 +26,16 @@ The sfm pipeline I used is the follow:
 2) Sort the paths (this means its better to use names like 000, 001, 002, ..., 00N and the images needs to be from left to   
 right for the algorithm to run correctely.
 3) Calculate feature points for each image (by default use AKAZE, but it can also find them with ORB, SIFT, SURF)
-3a) Match only neighbor pairs (000-001, 001-002, ..., 00(N-1)-00N). If fast=True
-3b) Match all images. (I think this gives better result, but it takes time to perform all calculations)
-4) Find good matching points using the Lowes Ratio value.
-5) 
+4a) Match only neighbor pairs (000-001, 001-002, ..., 00(N-1)-00N). If fast=True
+4b) Match all images. (I think this gives better result, but it takes time to perform all calculations)
+5) Find good matching points using the Lowes Ratio Distance Value. 
+(Read this paper for more information: https://www.cs.ubc.ca/~lowe/papers/ijcv04.pdf)
+6) Find inlier from good points by calculating the fundamental matrix (cv2.findFundamental)
+7) Approximate camera matrix. The camera matrix is:
+
+                      | f_x   0   c_x |
+        camera_mtrx = |  0   f_y  c_y |
+                      |  0    0    1  |
 
 ## Additional Libraries
 ### video2images()
