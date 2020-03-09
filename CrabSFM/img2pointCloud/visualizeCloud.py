@@ -12,3 +12,8 @@ def showCloud(path: str):
 def openCloud(path: str):
     cloud = read_point_cloud(path)
     return cloud
+
+
+def createMesh(path: str):
+    cloud = openCloud(path)
+    points = np.asarray(cloud.points)
