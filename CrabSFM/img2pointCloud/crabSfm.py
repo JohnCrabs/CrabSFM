@@ -117,8 +117,8 @@ class PoseMatrix:
         self.T_mtrx = np.array(poseMtrx)
 
     def set_pose_mtrx_using_pair(self, pair_pose_mtrx):
-        #print(pair_pose_mtrx)  # Uncomment for debugging
-        #print(self.T_mtrx)  # Uncomment for debugging
+        # print(pair_pose_mtrx)  # Uncomment for debugging
+        # print(self.T_mtrx)  # Uncomment for debugging
         p_mtrx = np.dot(pair_pose_mtrx, self.T_mtrx)
         self.T_mtrx = np.array(p_mtrx)
 
@@ -145,7 +145,7 @@ class ProjectionMatrix:
         # print(P_tmp)
 
         P = np.dot(cam_mtrx, P_tmp)
-        #P = P_tmp
+        # P = P_tmp
         # print(P)
         self.P_mtrx = P
 
@@ -255,7 +255,7 @@ class MatchImages:
             tmp.append(int(self.f_pts_indexes_L[i]))
             tmp.append(int(self.f_pts_indexes_R[i]))
             id_list.append(tmp)
-        #print(id_list)
+        # print(id_list)
         np.savetxt(path, id_list, delimiter=",", fmt='%d')
 
 
@@ -438,7 +438,7 @@ class BlockModel:
                                 tmp.append(pm_L_pnt_index)
                                 tmp.append(pm_R_pnt_index)
                                 pm_id_list_tmp.append(tmp)
-                                #print(pm_L_pnt_index, pm_L_id, pm_R_pnt_index, pm_R_id)
+                                # print(pm_L_pnt_index, pm_L_id, pm_R_pnt_index, pm_R_id)
                 elif pm_L_img_R_id == pm_R_img_L_id:
                     for l_id in range(0, len(table_id_list[pm_L_img_L_id])):
                         pm_L_id_r = table_id_list[pm_L_img_L_id][l_id][pm_L_img_R_id - pm_L_img_L_id]
@@ -462,7 +462,7 @@ class BlockModel:
                     break
 
                 # print(debugging_test)
-                #print(len(pm_id_list_tmp))
+                # print(len(pm_id_list_tmp))
                 # print(pm_id_list_tmp)
                 points_src = []
                 points_dst = []
@@ -512,10 +512,10 @@ class BlockModel:
                 points_src = np.array(points_src)
                 points_dst = np.array(points_dst)
 
-                #print(len(points_src))
-                #print(len(points_dst))
+                # print(len(points_src))
+                # print(len(points_dst))
 
-                #print(points_src)
+                # print(points_src)
                 points_src_t = points_src.T
                 points_dst_t = points_dst.T
 
