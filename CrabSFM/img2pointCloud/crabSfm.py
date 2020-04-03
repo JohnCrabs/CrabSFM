@@ -750,8 +750,8 @@ class BlockImage:
         points_L_img_ids = np.array(points_L_img_ids)  # ID_L
         points_R_img_ids = np.array(points_R_img_ids)  # ID_R
 
-        #print(points_L_img_ids)
-        #print(points_R_img_ids)
+        # print(points_L_img_ids)
+        # print(points_R_img_ids)
 
         # Calculate inliers using Fundamental Matrix
         print_message("Calculate inlier matches.")
@@ -812,21 +812,21 @@ class BlockImage:
                     tmp.append(-1)
 
                 match_list_tmp.append(tmp)
-            #print(match_list_tmp)
+            # print(match_list_tmp)
             block_match_list_tmp.append(match_list_tmp)
 
         for m in self.matches:
             imgL_id = m.img_L_id
             imgR_id = m.img_R_id
-            #print(imgL_id, imgR_id)
-            #print(block_match_list_tmp[imgL_id])
+            # print(imgL_id, imgR_id)
+            # print(block_match_list_tmp[imgL_id])
             match_ids_L = m.f_pts_indexes_L
             match_ids_R = m.f_pts_indexes_R
             for index in range(0, len(match_ids_L)):
                 block_match_list_tmp[imgL_id][match_ids_L[index]][imgR_id-imgL_id] = match_ids_R[index]
-            #print(block_match_list_tmp[imgL_id])
+            # print(block_match_list_tmp[imgL_id])
         self.block_match_list = block_match_list_tmp
-        #print(self.block_match_list)
+        # print(self.block_match_list)
 
     # -------------------------- #
     #   Functions for landmark
@@ -837,7 +837,7 @@ class BlockImage:
         print_message("Find Landmarks")
 
         matchSize = len(self.matches)
-        #print(matchSize) # Uncomment for debugging
+        # print(matchSize) # Uncomment for debugging
 
         cam_mtrx = self.camera.mtrx
 
@@ -854,7 +854,7 @@ class BlockImage:
             imgL = self.images[imgL_index]  # read left img (we need it for the index key table)
             imgR = self.images[imgR_index]  # read right img (we need it for general information like name)
 
-            #print(imgR)
+            # print(imgR)
 
             imgL_name = imgL.name  # read left img name
             imgR_name = imgR.name  # read right img name
@@ -880,7 +880,7 @@ class BlockImage:
 
             # I prefer inlier solution.
             E, mask = cv.findEssentialMat(pts_inlier_L, pts_inlier_R, cam_mtrx)
-            #print(E)
+            # print(E)
 
             pts_inlier_L = pts_inlier_L[mask.ravel() == 1]
             pts_inlier_R = pts_inlier_R[mask.ravel() == 1]
@@ -919,8 +919,10 @@ class BlockImage:
                 # Create the Pose and Projection Matrices
                 print_message("Calculate Pose Matrices:")
 
-                pose_mtrx_L_T = imgL.T_mtrx.T_mtrx   # imgL.T_mtrx is a list of all pose matrices of this image
-                                                     # imgL.T_mtrx[0].T_mtrx is always the matrix of the left img
+                # imgL.T_mtrx is a list of all pose matrices of this image
+                # imgL.T_mtrx[0].T_mtrx is always the matrix of the left img
+                pose_mtrx_L_T = imgL.T_mtrx.T_mtrx
+
                 pose_mtrx_R = PoseMatrix()
                 pose_mtrx_R.setPoseMatrix_R_t(R, t)
                 pose_mtrx_R.set_pose_mtrx_using_pair(pose_mtrx_L_T)
@@ -935,14 +937,14 @@ class BlockImage:
                     imgR.set_starting_pose_matrix(pose_mtrx_R)
                     imgR.set_starting_projection_matrix(proj_mtrx_R_P)
 
-                #print("")
-                #print("pose_mtrx_L = \n", pose_mtrx_L_T)  # Uncomment for debug
-                #print("")
-                #print("pose_mtrx_R = \n", pose_mtrx_R.T_mtrx)  # Uncomment for debug
-                #print("")
-                #print("proj_mtrx_L = \n", proj_mtrx_L_P)  # Uncomment for debug
-                #print("")
-                #print("proj_mtrx_R = \n", proj_mtrx_R_P.P_mtrx)  # Uncomment for debug
+                # print("")
+                # print("pose_mtrx_L = \n", pose_mtrx_L_T)  # Uncomment for debug
+                # print("")
+                # print("pose_mtrx_R = \n", pose_mtrx_R.T_mtrx)  # Uncomment for debug
+                # print("")
+                # print("proj_mtrx_L = \n", proj_mtrx_L_P)  # Uncomment for debug
+                # print("")
+                # print("proj_mtrx_R = \n", proj_mtrx_R_P.P_mtrx)  # Uncomment for debug
 
                 # Triangulate
                 proj_mtrx_R_P = proj_mtrx_R_P.P_mtrx
@@ -955,19 +957,19 @@ class BlockImage:
                                                 projMatr2=proj_mtrx_R_P,
                                                 projPoints1=triang_pnts_L,
                                                 projPoints2=triang_pnts_R)
-                #print(points4D)  # Uncomment for debugging
+                # print(points4D)  # Uncomment for debugging
 
                 # Find Good LandMark Points and Set Them to List
-                #print(pts_inlier_L_id)
-                #print(pts_inlier_R_id)
+                # print(pts_inlier_L_id)
+                # print(pts_inlier_R_id)
                 x_o = 0
                 y_o = 0
                 z_o = 0
                 x_y_z_counter = 0
                 for l_index in range(0, g_p_size):
                     if poseMask[l_index] != 0:
-                        #print(poseMask[l_index]) # Uncomment for debugging
-                        #print(l_index)  # Uncomment for debugging
+                        # print(poseMask[l_index]) # Uncomment for debugging
+                        # print(l_index)  # Uncomment for debugging
 
                         pt3d = Point3d()
 
@@ -1035,13 +1037,13 @@ class BlockImage:
             g = l_pnt.color.g
             b = l_pnt.color.b
             pt_tmp = [x, y, z]
-            #col = [0, 0, 0]
+            # col = [0, 0, 0]
             col = [r, g, b]
-            #print(col)
+            # print(col)
             points.append(pt_tmp)
             colors.append(col)
             id_list.append(l_pnt.match_id_list)
-            #print(pt_tmp)
+            # print(pt_tmp)
 
         points = np.array(points)
         colors = np.array(colors)
@@ -1081,8 +1083,8 @@ def CrabSFM(src: str, exportCloud: str, method=AKAZE_METHOD, fast=True):
         block.match_images()
     block.find_landmarks(exportCloud)
     block.create_block_model(exportCloud)
-    #print("")
-    #print(len(block.pair_model))
+    # print("")
+    # print(len(block.pair_model))
     return True
 
 # -------------------------------------------------------------- #
@@ -1259,7 +1261,7 @@ def find_color_list(img: Image, pts_inlier: []):
     img_open = cv.imread(img.src)
     img_size = img_open.shape
     img_open, img_size = imgDownsample(img_open, img_size[1], img_size[0])
-    #img_draw_kp = cv.drawKeypoints(img_L_open, kp_match_L_inlier, None, color=(0, 255, 0), flags=0)
+    # img_draw_kp = cv.drawKeypoints(img_L_open, kp_match_L_inlier, None, color=(0, 255, 0), flags=0)
     # cv.imwrite("./img.jpg", img_draw_kp)
 
     blue = img_open[:, :, 0]
@@ -1297,13 +1299,13 @@ def transform_landmark_to_list_items(landmark: []):
         g = l_pnt.color.g
         b = l_pnt.color.b
         pt_tmp = [x, y, z]
-        #col = [0, 0, 0]
+        # col = [0, 0, 0]
         col = [r, g, b]
-        #print(col)
+        # print(col)
         points.append(pt_tmp)
         colors.append(col)
         id_list.append(l_pnt.match_id_list)
-        #print(pt_tmp)
+        # print(pt_tmp)
 
     points = np.array(points)
     colors = np.array(colors)
@@ -1316,8 +1318,8 @@ def find_scale_parameter(pnt_cloud_1: [], pnt_cloud_2: []):
     points_src = np.array(pnt_cloud_1)
     points_dst = np.array(pnt_cloud_2)
     scale_list = []
-    #scale = 0
-    #scale_count = 0
+    # scale = 0
+    # scale_count = 0
     for p_id_1 in range(0, len(points_src) - 1):
         x1_1 = points_src[p_id_1][0]
         y1_1 = points_src[p_id_1][1]
@@ -1350,8 +1352,8 @@ def find_scale_parameter(pnt_cloud_1: [], pnt_cloud_2: []):
             if dist2 != 0:
                 scale_val = dist1 / dist2
                 scale_list.append(scale_val)
-                #scale += scale_val
-                #scale_count += 1
+                # scale += scale_val
+                # scale_count += 1
 
     scale = np.mean(scale_list)
     scale_error = np.std(scale_list)
