@@ -531,7 +531,7 @@ class BlockModel:
                 exp_points = pm_R.points
                 exp_colors = pm_R.colors
                 if exportCloud != "":
-                    exportName = exportCloud + "finalβλέ/" + img_R_L_name + "_" + img_R_R_name + "_R_t.ply"
+                    exportName = exportCloud + "final/" + img_R_L_name + "_" + img_R_R_name + "_R_t.ply"
                     message = "Export Rotate + Translate Pair Model as : " + exportName
                     print_message(message)
                     export_as_ply(exp_points, exp_colors, exportName)
