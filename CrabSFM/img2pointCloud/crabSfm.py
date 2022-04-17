@@ -6,6 +6,8 @@ import datetime as dt  # Use it for printing messages
 import math as mth
 
 from img2pointCloud.rigid_transform_3D import *
+import img2pointCloud.file_manipulation as file_manip
+
 
 imgFileFormats = (".jpg", ".jpeg", ".png", ".tiff")
 
@@ -1081,6 +1083,7 @@ def CrabSFM(src: str, exportCloud: str, method=AKAZE_METHOD, fast=True):
         block.match_images_fast()
     else:
         block.match_images()
+    file_manip.checkAndCreateFolders(exportCloud)
     block.find_landmarks(exportCloud)
     block.create_block_model(exportCloud)
     # print("")
